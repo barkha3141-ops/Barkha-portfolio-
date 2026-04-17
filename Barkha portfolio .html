@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>home — [artist]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+  :root {
+    --accent:     #5ba3ff;
+    --accent-dim: rgba(91,163,255,0.10);
+    --accent-glow:rgba(91,163,255,0.25);
+    --bg:         #06080f;
+    --fg:         #dde4f0;
+    --fg-dim:     #7a8499;
+    --border:     rgba(255,255,255,0.07);
+    --border-h:   rgba(255,255,255,0.15);
+  }
+
+  *, *::before, *::after {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* ─── TRANSITIONS ─── */
+  body, body * {
+    transition:
+      background-color 0.5s ease,
+      border-color     0.5s ease,
+      color            0.2s ease,
+      box-shadow       0.4s ease;
+  }
+
+  /* ─── CUSTOM CURSOR ─── */
+  .cursor-dot {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: opacity 0.2s, background-color 0.5s;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 40px; height: 40px;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%,-50%) rotate(45deg);
+    opacity: 0.8;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+
+  .cursor-ring::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0;
+    width: 2px; height: 28px;
+    background: var(--accent);
+    transform: translateX(-50%);
+  }
+
+  .cursor-ring::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: 0;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    transform: translateX(-50%) rotate(45deg);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+    padding: 1.6rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 3rem; right: 3rem;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .logo {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+    color: var(--fg);
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Syne Mono', monospace;
+    transition: color 0.2s;
+  }
+  .logo:hover { color: var(--accent); }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  nav a {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+
+  nav a::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: -3px;
+    width: 0; height: 1px;
+    background: var(--accent);
+    transition: width 0.25s ease;
+  }
+
+  nav a:hover,
+  nav a.active {
+    color: var(--fg);
+  }
+
+  nav a:hover::after,
+  nav a.active::after {
+    width: 100%;
+  }
+
+  nav a.active { color: var(--accent); }
+
+  /* ─── THEME SWITCHER ─── */
+  .theme-panel {
+    position: fixed;
+    right: 2.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    align-items: center;
+  }
+
+  .theme-label {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--fg-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    opacity: 0.4;
+    margin-bottom: 0.4rem;
+  }
+
+  .theme-dot {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .theme-dot:hover { transform: scale(1.4); }
+
+  .theme-dot.active {
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px currentColor;
+  }
+
+  .theme-dot.t-blue    { background:#5ba3ff; color:#5ba3ff; }
+  .theme-dot.t-purple  { background:#a66cff; color:#a66cff; }
+  .theme-dot.t-hotpink { background:#ff3f96; color:#ff3f96; }
+  .theme-dot.t-black   { background:#c8cdd6; color:#c8cdd6; }
+
+  /* ─── PAGES ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ═══════════ HOME ═══════════ */
+  #page-home {
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #three-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .home-footer-strip {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 1.8rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+
+  .home-tagline {
+    font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    opacity: 0.65;
+    line-height: 1.5;
+  }
+
+  .home-tagline em {
+    display: block;
+    font-style: normal;
+    color: var(--accent);
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.75em;
+    margin-bottom: 0.2rem;
+    opacity: 0.8;
+  }
+
+  .home-pill {
+    pointer-events: all;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .home-pill:hover {
+    background: var(--accent-dim);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .home-pill .pill-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.4s infinite;
+  }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ═══════════ INNER PAGE BASE ═══════════ */
+  .inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 7.5rem 3rem 5rem;
+  }
+
+  .page-eyebrow {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    opacity: 0.85;
+  }
+
+  .page-heading {
+    font-size: clamp(2.8rem, 6vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin-bottom: 4rem;
+  }
+
+  .page-heading span {
+    color: var(--accent);
+  }
+
+  /* ═══════════ ABOUT ═══════════ */
+  .about-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 4.5rem;
+    margin-bottom: 5rem;
+  }
+
+  .about-portrait {
+    position: relative;
+  }
+
+  .portrait-frame {
+    aspect-ratio: 3/4;
+    background: var(--accent-dim);
+    border: 1px solid var(--border-h);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .portrait-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(150deg, var(--accent-dim) 0%, transparent 55%);
+    z-index: 1;
+  }
+
+  .portrait-frame::after {
+    content: '[ portrait ]';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+    opacity: 0.25;
+    letter-spacing: 0.1em;
+  }
+
+  .portrait-frame img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    position: relative;
+    z-index: 2;
+  }
+
+  .portrait-tag {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--fg-dim);
+    opacity: 0.5;
+    margin-top: 0.8rem;
+    letter-spacing: 0.08em;
+  }
+
+  .about-bio p {
+    font-size: 1.02rem;
+    line-height: 1.85;
+    opacity: 0.82;
+    margin-bottom: 1.3rem;
+    font-weight: 400;
+  }
+
+  .about-bio a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .about-bio a:hover { color: var(--accent); }
+
+  .about-bio em { font-style: italic; opacity: 0.9; }
+
+  .section-rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0;
+  }
+
+  .sub-heading {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+    opacity: 0.85;
+  }
+
+  .linked-list {
+    list-style: none;
+  }
+
+  .linked-list li {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .linked-list li a,
+  .linked-list li span {
+    display: block;
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
+    color: var(--fg-dim);
+    text-decoration: none;
+    transition: color 0.2s, padding-left 0.2s;
+  }
+
+  .linked-list li a:hover {
+    color: var(--fg);
+    padding-left: 0.5rem;
+  }
+
+  .linked-list li .year {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-right: 0.8rem;
+    opacity: 0.7;
+  }
+
+  .socials {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .social-chip {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--fg-dim);
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.75rem;
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    text-transform: lowercase;
+  }
+
+  .social-chip:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Second portrait row */
+  .about-photo-row {
+    margin-top: 3rem;
+  }
+
+  .about-photo-row .portrait-frame {
+    aspect-ratio: 16/7;
+    max-height: 260px;
+  }
+
+  /* ═══════════ WORK ═══════════ */
+  .work-intro {
+    font-size: 1rem;
+    opacity: 0.6;
+    font-family: 'Syne Mono', monospace;
+    margin-bottom: 3rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* Featured (first large item) */
+  .work-featured {
+    display: block;
+    width: 100%;
+    margin-bottom: 1rem;
+    position: relative;
+    text-decoration: none;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color 0.25s;
+  }
+
+  .work-featured:hover { border-color: var(--accent); }
+
+  .work-featured-inner {
+    aspect-ratio: 16/7;
+    background: var(--accent-dim);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .work-featured-inner img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0.85;
+    transition: transform 0.5s ease, opacity 0.3s;
+  }
+
+  .work-featured:hover .work-featured-inner img { transform: scale(1.03); opacity: 1; }
+
+  /* Work pair grid */
+  .work-pairs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .work-card {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+
+  .work-card:hover { border-color: var(--accent); }
+
+  .work-card-img {
+    aspect-ratio: 4/3;
+    background: var(--accent-dim);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .work-card-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0.8;
+    transition: transform 0.5s ease, opacity 0.3s;
+  }
+
+  .work-card-img .placeholder-grid {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(0deg,   var(--border) 0 1px, transparent 1px 40px);
+    opacity: 0.5;
+  }
+
+  .work-card-img .placeholder-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--fg-dim);
+    opacity: 0.3;
+    letter-spacing: 0.1em;
+  }
+
+  .work-card:hover .work-card-img img { transform: scale(1.04); opacity: 1; }
+
+  .work-caption {
+    padding: 0.8rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.4);
+    border-top: 1px solid var(--border);
+  }
+
+  .work-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--fg);
+    text-transform: uppercase;
+  }
+
+  .work-tag {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    opacity: 0.7;
+    letter-spacing: 0.08em;
+  }
+
+  .featured-caption {
+    padding: 1rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.5);
+    border-top: 1px solid var(--border);
+  }
+
+  .featured-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+
+  .featured-badge {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.2rem 0.55rem;
+    opacity: 0.85;
+    letter-spacing: 0.1em;
+  }
+
+  .work-empty-notice {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--fg-dim);
+    opacity: 0.3;
+    text-align: center;
+    padding: 5rem 2rem;
+    border: 1px dashed var(--border);
+    letter-spacing: 0.12em;
+    display: none;
+  }
+
+  /* ═══════════ CONTACT ═══════════ */
+  .contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    margin-bottom: 4rem;
+  }
+
+  .contact-lead {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    opacity: 0.75;
+    margin-bottom: 2rem;
+  }
+
+  .contact-link-block {
+    margin-bottom: 0.5rem;
+  }
+
+  .contact-link-block .label {
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--fg-dim);
+    opacity: 0.5;
+    margin-bottom: 0.3rem;
+  }
+
+  .contact-link-block a,
+  .contact-link-block .val {
+    font-size: 0.95rem;
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-dim);
+    transition: color 0.2s, border-color 0.2s;
+    font-weight: 500;
+  }
+
+  .contact-link-block a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .contact-empty-block {
+    border: 1px dashed var(--border);
+    padding: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+    opacity: 0.25;
+    letter-spacing: 0.12em;
+    text-align: center;
+  }
+
+  .avail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: #4ade80;
+    border: 1px solid rgba(74,222,128,0.3);
+    padding: 0.4rem 0.8rem;
+    margin-bottom: 2rem;
+  }
+
+  .avail-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: blink 2s infinite;
+  }
+
+  /* ═══════════ FOOTER ═══════════ */
+  .page-footer {
+    border-top: 1px solid var(--border);
+    padding: 1.8rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+    opacity: 0.45;
+    max-width: 100%;
+    margin-top: 2rem;
+  }
+
+  .page-footer a {
+    color: var(--fg-dim);
+    text-decoration: none;
+  }
+
+  .page-footer a:hover { color: var(--fg); opacity: 1; }
+
+  .back-top {
+    display: block;
+    font-family: 'Syne Mono', monospace;
+    font-size: 0.7rem;
+    text-align: right;
+    color: var(--fg-dim);
+    cursor: pointer;
+    opacity: 0.4;
+    margin-top: 3.5rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.1em;
+    transition: opacity 0.2s, color 0.2s;
+    text-decoration: none;
+  }
+  .back-top:hover { opacity: 0.8; color: var(--accent); }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); opacity: 0.5; }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 720px) {
+    header { padding: 1.2rem 1.5rem; }
+    .inner { padding: 6rem 1.5rem 3rem; }
+    .about-layout { grid-template-columns: 1fr; gap: 2rem; }
+    .about-portrait { max-width: 220px; }
+    .work-pairs { grid-template-columns: 1fr; }
+    .contact-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+    nav ul { gap: 1.2rem; }
+    .theme-panel { right: 1rem; }
+    .page-footer { padding: 1.5rem; flex-direction: column; gap: 0.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ─── HEADER ─── -->
+<header id="site-header">
+  <a class="logo" onclick="go('home')">barkha morritt</a>
+  <nav>
+    <ul>
+      <li><a onclick="go('about')"   data-p="about">About</a></li>
+      <li><a onclick="go('work')"    data-p="work">Work</a></li>
+      <li><a onclick="go('contact')" data-p="contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ─── THEME SWITCHER ─── -->
+<div class="theme-panel">
+  <span class="theme-label">theme</span>
+  <button class="theme-dot t-blue active"    onclick="setTheme('blue')"    title="Blue"></button>
+  <button class="theme-dot t-purple"         onclick="setTheme('purple')"  title="Purple"></button>
+  <button class="theme-dot t-hotpink"        onclick="setTheme('hotpink')" title="Hotpink"></button>
+  <button class="theme-dot t-black"          onclick="setTheme('black')"   title="Mono"></button>
+</div>
+
+<!-- ══════════════════════════════ HOME ══════════════════════════════ -->
+<div class="page active" id="page-home">
+  <canvas id="three-canvas"></canvas>
+  <div class="home-footer-strip">
+    <div class="home-tagline">
+      <em>✦ available for projects</em>
+      Artist 
+    </div>
+    <a class="home-pill" onclick="go('work')">
+      <span class="pill-dot"></span>
+      View selected works
+    </a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ ABOUT ══════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="inner">
+    <p class="page-eyebrow">about</p>
+    <h1 class="page-heading">Hello <span>[hola]</span></h1>
+
+    <div class="about-layout">
+      <div class="about-portrait">
+        <div class="portrait-frame" id="portrait-main">
+          <img src="images/Barkha.jpeg" alt="Barkha">
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <div class="about-bio">
+        <p>
+          I’m Barkha from Hyderabad currently in Manipal pursuing my bachelor’s in Graphic Design and Digital Marketing.
+        </p>
+        <p>
+          Somewhere between late night overthinking playlists that hit too hard and sketching ideas that didn’t exist an hour ago I found my thing. Design isn’t just what I do it’s how I process the world. Every color I pick every curve I refine every layout I obsess over it all says something I couldn’t explain out loud.
+        </p>
+        <p>
+          I’m drawn to contrast. Clean but expressive. Structured but a little rebellious. I like when things make sense but I love when they make you feel something first.
+        </p>
+        <p>
+          I’ve spent time getting lost questioning restarting unlearning and that’s exactly what shaped my perspective. I don’t create perfect work I create honest work. Work that evolves just like I do.
+        </p>
+        <p>
+          Right now I’m exploring experimenting and building. Learning the rules breaking them and then rewriting them in my own way.
+        </p>
+        <p>
+          <em>This isn’t just a portfolio.<br>
+          It’s a glimpse into how I see think and feel through design.</em>
+        </p>
+      </div>
+    </div>
+
+    <!-- Second photo -->
+    <div class="about-photo-row">
+      <div class="portrait-frame" id="portrait-live">
+        <!-- <img src="your-livecoding-photo.jpg" alt="live coding"> -->
+      </div>
+      <p class="portrait-tag" style="margin-top:0.8rem">// live at [MIC], [Manipal]]</p>
+    </div>
+
+    <hr class="section-rule">
+
+    <!-- Press -->
+    <p class="sub-heading">Press</p>
+    <ul class="linked-list">
+      <li><a href="#"><span class="year">2025–</span>Feature — [Publication name]</a></li>
+      <li><a href="#"><span class="year">2024</span>Interview — [Magazine / blog]</a></li>
+      <li><a href="#"><span class="year">2023</span>Podcast — [Show name]</a></li>
+      <li><a href="#"><span class="year">2022</span>Feature — [Gallery or festival]</a></li>
+    </ul>
+
+    <hr class="section-rule">
+
+    <!-- Links -->
+    <p class="sub-heading">Links</p>
+    <div class="socials">
+      <a class="social-chip" href="#">Instagram</a>
+      <a class="social-chip" href="#">Twitter / X</a>
+      <a class="social-chip" href="#">Bluesky</a>
+      <a class="social-chip" href="#">GitHub</a>
+      <a class="social-chip" href="#">CV →</a>
+    </div>
+
+    <a class="back-top" onclick="scrollTop()">top ▲</a>
+  </div>
+  <div class="page-footer">
+    <span>All rights reserved. © 2026</span>
+    <span>Made with ♥</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ WORK ══════════════════════════════ -->
+<div class="page" id="page-work">
+  <div class="inner">
+    <p class="page-eyebrow">work</p>
+    <h1 class="page-heading">My <span>works</span></h1>
+    <a class="work-featured" href="#" style="margin-bottom:1rem; display:block; text-decoration:none; border:1px solid var(--border);">
+      <div class="work-featured-inner">
+        <img src="images/sight and sound.jpeg" alt="Sight & Sound 1975">
+      </div>
+      <div class="featured-caption">
+        <span class="featured-title">Sight & Sound 1975</span>
+        <span class="featured-badge">Editorial Design</span>
+      </div>
+    </a>
+
+    <!-- Paired items -->
+    <div class="work-pairs" id="work-pairs">
+      <!-- JS-generated below -->
+    </div>
+
+    <a class="back-top" onclick="scrollTop()">top ▲</a>
+  </div>
+  <div class="page-footer">
+    <span>All rights reserved. © 2026</span>
+    <span>Made with ♥</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ CONTACT ══════════════════════════════ -->
+<div class="page" id="page-contact">
+  <div class="inner">
+    <p class="page-eyebrow">contact</p>
+    <h1 class="page-heading">Get in <span>touch</span></h1>
+
+    <div class="avail-badge">
+      <span class="avail-dot"></span>
+      Available for commissions &amp; collaborations
+    </div>
+
+    <div class="contact-layout">
+      <div>
+        <p class="contact-lead">
+          Whether you're a brand, a fellow artist, a musician, or a curious
+          human — let's make something together. Fill in your details in the
+          next pass and replace the placeholders below.
+        </p>
+
+        <div class="contact-link-block" style="margin-bottom:1.5rem">
+          <p class="label">Email</p>
+          <a href="mailto:barkhamorritt27@gmail.com" class="val">barkhamorritt27@gmail.com</a>
+        </div>
+
+        <div class="contact-link-block" style="margin-bottom:1.5rem">
+          <p class="label">Based in</p>
+          <span class="val">[ Manipal, India ]</span>
+        </div>
+
+        <div class="contact-link-block">
+          <p class="label">Social</p>
+          <div class="socials" style="margin-top:0.5rem">
+            <a class="social-chip" href="#">Instagram</a>
+            <a class="social-chip" href="#">LinkedIn</a>
+            <a class="social-chip" href="#">Pinterest</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="back-top" onclick="scrollTop()">top ▲</a>
+  </div>
+  <div class="page-footer">
+    <span>All rights reserved. © 2026</span>
+    <span>Made with ♥</span>
+  </div>
+</div>
+
+<!-- ════════════════════ SCRIPTS ════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────
+// ROUTING
+// ──────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a => {
+    a.classList.toggle('active', a.dataset.p === id);
+  });
+  window.scrollTo(0, 0);
+  document.title = id + ' — [artist]';
+}
+
+function scrollTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+// ──────────────────────────────────────────────────
+// CURSOR
+// ──────────────────────────────────────────────────
+const dot  = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+function tickCursor() {
+  dot.style.left = mx + 'px';
+  dot.style.top  = my + 'px';
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(tickCursor);
+}
+tickCursor();
+
+document.querySelectorAll('a, button, .logo, .home-pill').forEach(el => {
+  el.addEventListener('mouseenter', () => { ring.style.transform = 'translate(-50%,-50%) rotate(45deg) scale(1.4)'; ring.style.opacity = '1'; });
+  el.addEventListener('mouseleave', () => { ring.style.transform = 'translate(-50%,-50%) rotate(45deg) scale(1)'; ring.style.opacity = '0.8'; });
+});
+
+// ──────────────────────────────────────────────────
+// WORK PAIRS
+// ──────────────────────────────────────────────────
+const projects = [
+  { title: 'Swirlo', tag: 'Poster Design', img: 'images/swirlo.jpeg' },
+  { title: 'Sneeze', tag: 'Typography', img: 'images/sneeze.jpeg' },
+  { title: 'Salty', tag: 'Typography', img: 'images/salty.jpeg' },
+  { title: 'Liquid', tag: 'Typography', img: 'images/liquid.jpeg' },
+  { title: 'Angry', tag: 'Typography', img: 'images/angry.jpeg' },
+  { title: 'Fast', tag: 'Typography', img: 'images/fast.jpeg' },
+  { title: '3D Sushi', tag: '3D Design', img: 'images/sushi.jpeg' },
+  { title: 'Oppenheimer', tag: 'Poster Redesign', img: 'images/oppenheimer.jpeg' }
+];
+
+const pairsEl = document.getElementById('work-pairs');      
+pairsEl.innerHTML = ''; // Clears the placeholder
+projects.forEach(p => {
+  const el = document.createElement('a');
+  el.href = '#';
+  el.className = 'work-card';
+  el.innerHTML = `
+    <div class="work-card-img">
+      <img src="${p.img}" alt="${p.title}">
+    </div>
+    <div class="work-caption">
+      <span class="work-title">${p.title}</span>
+      <span class="work-tag">${p.tag}</span>
+    </div>`;
+  pairsEl.appendChild(el);
+});
+
+// ──────────────────────────────────────────────────
+// THEMES
+// ──────────────────────────────────────────────────
+const THEMES = {
+  blue:    { accent:'#5ba3ff', dim:'rgba(91,163,255,0.10)',  glow:'rgba(91,163,255,0.25)',  bg:'#06080f', fg:'#dde4f0', tint:'#0a0e1a' },
+  purple:  { accent:'#a855f7', dim:'rgba(168,85,247,0.10)',  glow:'rgba(168,85,247,0.25)',  bg:'#08060f', fg:'#e8ddf5', tint:'#100a18' },
+  hotpink: { accent:'#ff3f96', dim:'rgba(255,63,150,0.10)',  glow:'rgba(255,63,150,0.28)',  bg:'#0f0609', fg:'#f5dde8', tint:'#1a0710' },
+  black:   { accent:'#c8cdd6', dim:'rgba(200,205,214,0.08)', glow:'rgba(200,205,214,0.15)', bg:'#080808', fg:'#e0e0e0', tint:'#111' },
+};
+
+let curTheme = 'blue';
+
+function setTheme(name) {
+  const t = THEMES[name];
+  const r = document.documentElement.style;
+  r.setProperty('--accent',     t.accent);
+  r.setProperty('--accent-dim', t.dim);
+  r.setProperty('--accent-glow',t.glow);
+  r.setProperty('--bg',         t.bg);
+  r.setProperty('--fg',         t.fg);
+  curTheme = name;
+  document.querySelectorAll('.theme-dot').forEach(b => b.classList.toggle('active', b.classList.contains('t-'+name)));
+  if (threeReady) updateThreeTheme(t.accent);
+}
+
+// ──────────────────────────────────────────────────
+// THREE.JS HOME SCENE
+// ──────────────────────────────────────────────────
+let threeReady = false;
+let renderer3, scene3, camera3, clock3;
+let ringMeshes = [], particleSys, textSprite, textCtx, textTexture;
+let orbitGroup;
+
+function hexToThreeColor(hex) { return new THREE.Color(hex); }
+
+function buildTextCanvas() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 180;
+  const ctx = c.getContext('2d');
+  textCtx = ctx;
+  drawText(ctx, THEMES[curTheme].accent, c.width, c.height);
+  return c;
+}
+
+function drawText(ctx, color, w, h) {
+  ctx.clearRect(60, 60, w, h);
+  ctx.font = "800 52px 'Syne', sans-serif";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = color;
+  ctx.fillText("connecting creativity.", w / 2, h / 2);
+}
+
+function updateThreeTheme(hex) {
+  const col = hexToThreeColor(hex);
+  ringMeshes.forEach(m => { if (m.material) m.material.color.set(col); });
+  if (particleSys) particleSys.material.color.set(col);
+  if (textCtx && textTexture) {
+    drawText(textCtx, hex, 1024, 180);
+    textTexture.needsUpdate = true;
+  }
+}
+
+function initThree() {
+  if (threeReady) return;
+
+  const canvas = document.getElementById('three-canvas');
+  const W = window.innerWidth, H = window.innerHeight;
+
+  scene3  = new THREE.Scene();
+  clock3  = new THREE.Clock();
+  camera3 = new THREE.PerspectiveCamera(55, W / H, 0.1, 200);
+  camera3.position.z = 5.5;
+
+  renderer3 = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer3.setSize(W, H);
+  renderer3.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer3.setClearColor(0x000000, 0);
+
+  const col = hexToThreeColor(THEMES[curTheme].accent);
+
+
+  // ── Main torus ring ──
+  const tGeo = new THREE.TorusGeometry(2.0, 0.025, 6, 140);
+  const tMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.55 });
+  const torus = new THREE.Mesh(tGeo, tMat);
+  scene3.add(torus);
+  ringMeshes.push(torus);
+
+  // ── Second ring (tilted) ──
+  const tGeo2 = new THREE.TorusGeometry(2.0, 0.018, 6, 140);
+  const tMat2 = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.3 });
+  const torus2 = new THREE.Mesh(tGeo2, tMat2);
+  torus2.rotation.y = Math.PI / 2.2;
+  scene3.add(torus2);
+  ringMeshes.push(torus2);
+
+  // ── Third ring ──
+  const tGeo3 = new THREE.TorusGeometry(2.0, 0.012, 6, 140);
+  const tMat3 = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18 });
+  const torus3 = new THREE.Mesh(tGeo3, tMat3);
+  torus3.rotation.x = Math.PI / 3;
+  scene3.add(torus3);
+  ringMeshes.push(torus3);
+
+
+  // ── Central sphere ──
+  const cGeo = new THREE.SphereGeometry(0.1, 16, 16);
+  const cMat = new THREE.MeshBasicMaterial({ color: col });
+  const center = new THREE.Mesh(cGeo, cMat);
+  scene3.add(center);
+  ringMeshes.push(center);
+
+  // ── Particles ──
+  const PC = 400;
+  const pos = new Float32Array(PC * 3);
+  for (let i = 0; i < PC; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 16;
+    pos[i*3+1] = (Math.random() - 0.5) * 16;
+    pos[i*3+2] = (Math.random() - 0.5) * 10;
+  }
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const pMat = new THREE.PointsMaterial({ color: col, size: 0.022, transparent: true, opacity: 0.35 });
+  particleSys = new THREE.Points(pGeo, pMat);
+  scene3.add(particleSys);
+
+  // ── Text sprite ──
+  const tc = buildTextCanvas();
+  textTexture = new THREE.CanvasTexture(tc);
+  const spMat = new THREE.SpriteMaterial({ map: textTexture, transparent: true, depthWrite: false });
+  textSprite = new THREE.Sprite(spMat);
+  textSprite.scale.set(4.8, 0.85, 1);
+  scene3.add(textSprite);
+
+  // ── Mouse parallax ──
+  let mouse = { x: 0, y: 0 };
+  window.addEventListener('mousemove', e => {
+    mouse.x = (e.clientX / window.innerWidth  - 0.5) * 2;
+    mouse.y = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+  scene3.userData.mouse = mouse;
+  scene3.userData.torus  = torus;
+  scene3.userData.torus2 = torus2;
+  scene3.userData.torus3 = torus3;
+
+  // ── Resize ──
+  window.addEventListener('resize', () => {
+    const W2 = window.innerWidth, H2 = window.innerHeight;
+    camera3.aspect = W2 / H2;
+    camera3.updateProjectionMatrix();
+    renderer3.setSize(W2, H2);
+  });
+
+  threeReady = true;
+  animateThree();
+}
+
+function animateThree() {
+  requestAnimationFrame(animateThree);
+  const t = clock3.getElapsedTime();
+  const { mouse, torus, torus2, torus3 } = scene3.userData;
+
+  torus.rotation.x  = t * 0.28 + mouse.y * 0.15;
+  torus.rotation.y  = t * 0.18 + mouse.x * 0.15;
+  torus2.rotation.x = t * 0.22 - mouse.y * 0.1;
+  torus2.rotation.z = t * 0.16;
+  torus3.rotation.y = t * 0.14 + mouse.x * 0.08;
+  torus3.rotation.z = -t * 0.12;
+
+
+  particleSys.rotation.y = t * 0.025;
+  particleSys.rotation.x = Math.sin(t * 0.04) * 0.08;
+
+  // Text gentle float
+  textSprite.position.y = Math.sin(t * 0.9) * 0.06;
+
+  // Camera gentle drift with enhanced parallax
+  camera3.position.x += (mouse.x * 0.6 - camera3.position.x) * 0.04;
+  camera3.position.y += (-mouse.y * 0.6 - camera3.position.y) * 0.04;
+  camera3.lookAt(0, 0, 0);
+
+  renderer3.render(scene3, camera3);
+}
+
+// Start Three.js after fonts load
+document.fonts.ready.then(() => {
+  initThree();
+  // Re-draw text now that Syne font is available
+  if (threeReady && textCtx && textTexture) {
+    drawText(textCtx, THEMES[curTheme].accent, 1024, 180);
+    textTexture.needsUpdate = true;
+  }
+});
+</script>
+</body>
+</html>
